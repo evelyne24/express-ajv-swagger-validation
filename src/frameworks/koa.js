@@ -15,7 +15,7 @@ function _getParameters(ctx) {
 async function validate(validateRequest, ctx, next) {
     let requestOptions, errors;
     requestOptions = _getParameters(ctx, next);
-    errors = await validateRequest(requestOptions);
+    errors = validateRequest(requestOptions);
     if (errors) {
         throw errors;
     }

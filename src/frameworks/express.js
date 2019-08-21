@@ -12,12 +12,10 @@ function _getParameters(req) {
     return requestOptions;
 }
 
-function validate(validateRequest, req, res, next) {
+function validate(validateRequest, req) {
     let requestOptions;
     requestOptions = _getParameters(req);
-    validateRequest(requestOptions).then(function(errors) {
-        next(errors);
-    });
+    return validateRequest(requestOptions);
 }
 
 module.exports = {

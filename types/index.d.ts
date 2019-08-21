@@ -12,8 +12,8 @@ export function init(swaggerPath: string, options?: ajvValidatorOptions): void;
  * Middleware that validates the request against the swagger
  * file, according to the request method and route
  */
-declare function validate(ctx: any, next: Function): void; // koa
-declare function validate(req: any, res: any, next: Function): void; // express
+declare function validate(ctx: any, next: Function): any; // koa
+declare function validate(req: any, res: any, next: Function): any; // express
 export { validate };
 
 export class InputValidationError extends Error {

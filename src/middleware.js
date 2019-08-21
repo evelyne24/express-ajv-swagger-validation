@@ -21,7 +21,7 @@ function init(swaggerPath, options) {
     schemaEndpointResolver = new SchemaEndpointResolver();
 
     // build schema for requests only
-    let schemaBuilderOptions = Object.assign({}, options, { buildRequests: true, buildResponses: false });
+    let schemaBuilderOptions = Object.assign({}, options, {buildRequests: true, buildResponses: false});
     schemas = apiSchemaBuilder.buildSchemaSync(swaggerPath, schemaBuilderOptions);
 }
 
@@ -30,47 +30,43 @@ function validate(...args) {
 }
 
 function _validateRequest(requestOptions) {
-    return Promise.all([
-        _validateParams(requestOptions.headers, requestOptions.params, requestOptions.query, requestOptions.files, requestOptions.path, requestOptions.method.toLowerCase()).catch(e => e),
-        _validateBody(requestOptions.body, requestOptions.path, requestOptions.method.toLowerCase()).catch(e => e)
-    ]).then(function (errors) {
-        if (errors[0] || errors[1]) {
-            return errors[0] && errors[1] ? Promise.reject(errors[0].concat(errors[1])) : errors[0] ? Promise.reject(errors[0]) : Promise.reject(errors[1]);
-        }
-    }).catch(function (errors) {
-        let error;
-
+    const paramsErrors = _validateParams(requestOptions.headers, requestOptions.params, requestOptions.query, requestOptions.files, requestOptions.path, requestOptions.method.toLowerCase());
+    const bodyErrors = _validateBody(requestOptions.body, requestOptions.path, requestOptions.method.toLowerCase());
+    let errors;
+    if (paramsErrors || bodyErrors) {
+        errors = paramsErrors && bodyErrors ? paramsErrors.concat(bodyErrors) : paramsErrors || bodyErrors;
+    }
+    if (errors) {
         if (middlewareOptions.errorFormatter) {
-            error = middlewareOptions.errorFormatter(errors, middlewareOptions);
+            errors = middlewareOptions.errorFormatter(errors, middlewareOptions);
         } else {
-            error = new InputValidationError(errors,
-                { beautifyErrors: middlewareOptions.beautifyErrors,
-                    firstError: middlewareOptions.firstError });
+            errors = new InputValidationError(errors,
+                {
+                    beautifyErrors: middlewareOptions.beautifyErrors,
+                    firstError: middlewareOptions.firstError
+                });
         }
-
-        return Promise.resolve(error);
-    });
+    }
+    return errors;
 }
 
 function _validateBody(body, path, method) {
-    return new Promise(function (resolve, reject) {
-        const methodSchema = schemaEndpointResolver.getMethodSchema(schemas, path, method);
-        if (methodSchema && methodSchema.body && !methodSchema.body.validate(body)) {
-            return reject(methodSchema.body.errors);
-        }
-        return resolve();
-    });
+    const methodSchema = schemaEndpointResolver.getMethodSchema(schemas, path, method);
+    if (methodSchema && methodSchema.body && !methodSchema.body.validate(body)) {
+        return methodSchema.body.errors;
+    }
 }
 
 function _validateParams(headers, pathParams, query, files, path, method) {
-    return new Promise(function (resolve, reject) {
-        const methodSchema = schemaEndpointResolver.getMethodSchema(schemas, path, method);
-        if (methodSchema && methodSchema.parameters && !methodSchema.parameters.validate({ query: query, headers: headers, path: pathParams, files: files })) {
-            return reject(methodSchema.parameters.errors);
-        }
-
-        return resolve();
-    });
+    const methodSchema = schemaEndpointResolver.getMethodSchema(schemas, path, method);
+    if (methodSchema && methodSchema.parameters && !methodSchema.parameters.validate({
+        query: query,
+        headers: headers,
+        path: pathParams,
+        files: files
+    })) {
+        return methodSchema.parameters.errors;
+    }
 }
 
 module.exports = {
